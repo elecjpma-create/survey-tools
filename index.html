@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>測量小工具</title>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="測量小工具">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#1f6feb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--text:#1d2129;--muted:#6b7280;--line:#dcdfe4;--acc:#1f6feb;--accbg:#e8f0fe;--res:#0b5d1e;--resbg:#eaf6ec}
+@media (prefers-color-scheme:dark){:root{--bg:#15171b;--card:#1f2227;--text:#e8eaed;--muted:#9aa1ab;--line:#353a42;--acc:#5a9cff;--accbg:#1d2c44;--res:#8fe3a1;--resbg:#17301d}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:-apple-system,system-ui,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif}
+header{position:sticky;top:0;z-index:5;background:var(--bg);padding:calc(8px + env(safe-area-inset-top)) 10px 6px}
+h1{font-size:17px;margin:2px 4px 8px;font-weight:600}
+#tabs{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+#tabs::-webkit-scrollbar{display:none}
+#tabs button{flex:none;border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:999px;padding:8px 14px;font-size:15px;font-family:inherit}
+#tabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{padding:6px 12px calc(24px + env(safe-area-inset-bottom));max-width:560px;margin:0 auto}
+.pg{display:none}.pg.on{display:block}
+.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin:10px 0}
+.card h2{font-size:14px;color:var(--muted);font-weight:600;margin:0 0 8px}
+.desc{font-size:13px;color:var(--muted);margin:2px 2px 0;line-height:1.5}
+.f{display:flex;align-items:center;gap:8px;margin:7px 0}
+.f label{flex:none;width:76px;font-size:15px}
+.f input{flex:1;min-width:0;font-size:18px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;background:var(--bg);color:var(--text);font-family:inherit;font-variant-numeric:tabular-nums}
+.f input:focus{outline:2px solid var(--acc);outline-offset:-1px}
+.f .u{flex:none;color:var(--muted);font-size:14px;width:18px}
+.pm{flex:none;width:40px;height:42px;border:1px solid var(--line);border-radius:9px;background:var(--card);color:var(--text);font-size:18px}
+.dms{display:flex;gap:6px;flex:1;min-width:0}
+.dms input{width:0}
+.chk{display:flex;align-items:center;gap:10px;font-size:16px;margin:10px 0 4px}
+.chk input{width:22px;height:22px}
+.btns{display:flex;gap:10px;margin:12px 0 4px}
+.btns button{flex:1;font-size:17px;padding:12px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--text);font-family:inherit}
+.btns .go{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600;flex:2}
+.res{background:var(--resbg);border-color:transparent}
+.res h2{color:var(--res)}
+.rv{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding:6px 0;border-top:1px solid rgba(127,127,127,.15)}
+.rv:first-of-type{border-top:0}
+.rv span{color:var(--muted);font-size:14px;flex:none}
+.rv b{font-size:22px;font-weight:600;color:var(--text);font-variant-numeric:tabular-nums;text-align:right;user-select:all;-webkit-user-select:all}
+.err{color:#d93025;font-size:14px;margin-top:6px;min-height:1em}
+.seg{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;flex:1}
+.seg button{flex:1;border:0;background:var(--card);color:var(--text);padding:9px;font-size:15px;font-family:inherit}
+.seg button.on{background:var(--accbg);color:var(--acc);font-weight:600}
+footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.6}
+</style>
+</head>
+<body>
+<header>
+  <h1>測量小工具</h1>
+  <nav id="tabs">
+    <button data-p="p3">方位距離</button>
+    <button data-p="p4">坐標推算</button>
+    <button data-p="ang">角度偏移</button>
+    <button data-p="u2w">坐標→經緯度</button>
+    <button data-p="w2u">經緯度→坐標</button>
+  </nav>
+</header>
+<main>
+
+<!-- P3：兩點反算方位角、平距 -->
+<section class="pg" id="p3">
+  <p class="desc">輸入測站和目標的坐標，算出方位角和平距。</p>
+  <div class="card"><h2>測站</h2>
+    <div class="f"><label>N1</label><input data-k="p3n1" inputmode="decimal"></div>
+    <div class="f"><label>E1</label><input data-k="p3e1" inputmode="decimal"></div>
+  </div>
+  <div class="card"><h2>目標</h2>
+    <div class="f"><label>N2</label><input data-k="p3n2" inputmode="decimal"></div>
+    <div class="f"><label>E2</label><input data-k="p3e2" inputmode="decimal"></div>
+  </div>
+  <div class="btns"><button data-clear="p3">清除</button><button class="go" data-go="p3">計算</button></div>
+  <div class="err" id="p3err"></div>
+  <div class="card res" id="p3res" hidden><h2>結果</h2>
+    <div class="rv"><span>方位角</span><b id="p3az"></b></div>
+    <div class="rv"><span>平距</span><b id="p3d"></b></div>
+  </div>
+</section>
+
+<!-- P4：由方位角、平距推算坐標 -->
+<section class="pg" id="p4">
+  <p class="desc">由測站坐標、方位角、平距、高差，推算目標點的 N、E、Z。</p>
+  <div class="card"><h2>測站資料</h2>
+    <div class="f"><label>N</label><input data-k="p4n" inputmode="decimal"></div>
+    <div class="f"><label>E</label><input data-k="p4e" inputmode="decimal"></div>
+    <div class="f"><label>Z</label><input data-k="p4z" inputmode="decimal"><button class="pm" data-pm="p4z">±</button></div>
+    <div class="f"><label>儀器高</label><input data-k="p4i" inputmode="decimal"></div>
+    <div class="f"><label>覘標高</label><input data-k="p4t" inputmode="decimal"></div>
+  </div>
+  <div class="card"><h2>觀測</h2>
+    <div class="f"><label>方位角</label><div class="dms"><input data-k="p4ad" inputmode="decimal" placeholder="度"><input data-k="p4am" inputmode="decimal" placeholder="分"><input data-k="p4as" inputmode="decimal" placeholder="秒"></div></div>
+    <div class="f"><label>平距</label><input data-k="p4d" inputmode="decimal"></div>
+    <div class="f"><label>高差</label><input data-k="p4h" inputmode="decimal"><button class="pm" data-pm="p4h">±</button></div>
+  </div>
+  <div class="btns"><button data-clear="p4">清除</button><button class="go" data-go="p4">計算</button></div>
+  <div class="err" id="p4err"></div>
+  <div class="card res" id="p4res" hidden><h2>目標點</h2>
+    <div class="rv"><span>N</span><b id="p4rn"></b></div>
+    <div class="rv"><span>E</span><b id="p4re"></b></div>
+    <div class="rv"><span>Z</span><b id="p4rz"></b></div>
+  </div>
+</section>
+
+<!-- Angle：偏移量造成的角度改正 -->
+<section class="pg" id="ang">
+  <p class="desc">輸入距離、偏移量和夾角，算出偏移造成的角度，以及加減後的角度。勾「往左」是減，不勾是加。</p>
+  <div class="card"><h2>測站資料</h2>
+    <div class="f"><label>距離</label><input data-k="angd" inputmode="decimal"></div>
+    <div class="f"><label>偏移量</label><input data-k="ange" inputmode="decimal"></div>
+    <div class="f"><label>夾角</label><input data-k="anga" inputmode="decimal" placeholder="例：359.5959"></div>
+    <label class="chk"><input type="checkbox" data-k="angl">往左</label>
+  </div>
+  <div class="btns"><button data-clear="ang">清除</button><button class="go" data-go="ang">計算</button></div>
+  <div class="err" id="angerr"></div>
+  <div class="card res" id="angres" hidden><h2>結果</h2>
+    <div class="rv"><span>角度偏移量</span><b id="angoff"></b></div>
+    <div class="rv"><span>偏移後角度</span><b id="angout"></b></div>
+  </div>
+</section>
+
+<!-- UtoW：TWD97 二度分帶 → 經緯度 -->
+<section class="pg" id="u2w">
+  <p class="desc">TWD97 二度分帶坐標換算成經緯度（GRS80）。</p>
+  <div class="card">
+    <div class="f"><label>E 橫坐標</label><input data-k="u2we" inputmode="decimal" placeholder="28xxxx.xxx"></div>
+    <div class="f"><label>N 縱坐標</label><input data-k="u2wn" inputmode="decimal" placeholder="277xxxx.xxx"></div>
+    <div class="f"><label>中央經線</label><div class="seg" data-seg="u2wl"><button data-v="121">121°</button><button data-v="119">119°（澎湖）</button></div></div>
+  </div>
+  <div class="btns"><button data-clear="u2w">清除</button><button class="go" data-go="u2w">計算</button></div>
+  <div class="err" id="u2werr"></div>
+  <div class="card res" id="u2wres" hidden><h2>結果</h2>
+    <div class="rv"><span>緯度 N</span><b id="u2wla"></b></div>
+    <div class="rv"><span>經度 E</span><b id="u2wlo"></b></div>
+    <div class="rv"><span>十進位</span><b id="u2wdec" style="font-size:16px"></b></div>
+  </div>
+</section>
+
+<!-- WU60：經緯度（度.分秒）→ TWD97 二度分帶 -->
+<section class="pg" id="w2u">
+  <p class="desc">經緯度換算成 TWD97 二度分帶坐標。輸入「度.分秒」，例如 121.5959687 代表 121°59'59.687"。</p>
+  <div class="card">
+    <div class="f"><label>緯度 N</label><input data-k="w2ula" inputmode="decimal" placeholder="25.5959687"></div>
+    <div class="f"><label>經度 E</label><input data-k="w2ulo" inputmode="decimal" placeholder="121.5959687"></div>
+    <div class="f"><label>中央經線</label><div class="seg" data-seg="w2ul"><button data-v="121">121°</button><button data-v="119">119°（澎湖）</button></div></div>
+  </div>
+  <div class="btns"><button data-clear="w2u">清除</button><button class="go" data-go="w2u">計算</button></div>
+  <div class="err" id="w2uerr"></div>
+  <div class="card res" id="w2ures" hidden><h2>結果</h2>
+    <div class="rv"><span>N 縱坐標</span><b id="w2un"></b></div>
+    <div class="rv"><span>E 橫坐標</span><b id="w2ue"></b></div>
+  </div>
+</section>
+
+<footer>可離線使用。iPhone：Safari 分享 →「加入主畫面」</footer>
+</main>
+
+<script>
+(function(){
+const $=id=>document.getElementById(id);
+const R=Math.PI/180;
+const store=(()=>{try{const t='__t';localStorage.setItem(t,t);localStorage.removeItem(t);return localStorage;}catch(_){return null;}})();
+const get=k=>{try{return store?store.getItem('tla.'+k):null;}catch(_){return null;}};
+const put=(k,v)=>{try{if(store)store.setItem('tla.'+k,v);}catch(_){}};
+
+/* ---------- 輸入欄位：記住上次的值 ---------- */
+const inputs=[...document.querySelectorAll('[data-k]')];
+for(const el of inputs){
+  const v=get(el.dataset.k);
+  if(el.type==='checkbox'){el.checked=v==='1';el.onchange=()=>put(el.dataset.k,el.checked?'1':'0');}
+  else{if(v!=null)el.value=v;el.oninput=()=>put(el.dataset.k,el.value);el.addEventListener('keydown',e=>{if(e.key==='Enter'){const pg=el.closest('.pg');calc(pg.id);el.blur();}});}
+}
+document.querySelectorAll('[data-pm]').forEach(b=>b.onclick=()=>{const el=document.querySelector(`[data-k="${b.dataset.pm}"]`);const s=el.value.trim();el.value=s.startsWith('-')?s.slice(1):'-'+s;put(el.dataset.k,el.value);});
+document.querySelectorAll('[data-seg]').forEach(sg=>{const k=sg.dataset.seg;const cur=get(k)||'121';
+  sg.querySelectorAll('button').forEach(b=>{b.classList.toggle('on',b.dataset.v===cur);b.onclick=()=>{put(k,b.dataset.v);sg.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));};});});
+const val=k=>{const el=document.querySelector(`[data-k="${k}"]`);return el.type==='checkbox'?el.checked:el.value.trim();};
+const seg=k=>parseFloat(get(k)||'121');
+
+/* ---------- 分頁 ---------- */
+function show(p){document.querySelectorAll('.pg').forEach(s=>s.classList.toggle('on',s.id===p));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));put('tab',p);}
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.p));
+show(get('tab')||'p3');
+
+/* ---------- 共用 ---------- */
+function num(k,name,opt){const s=val(k);if(s===''){if(opt)return 0;throw new Error(`請輸入${name}`);}const v=Number(s);if(!isFinite(v))throw new Error(`${name}不是數字`);return v;}
+const fx=(v,d)=>(Math.abs(v)<0.5*Math.pow(10,-d)?0:v).toFixed(d);
+// 秒數 → 度分秒（秒取 places 位小數，進位時往分、度進位）
+function dmsOf(sec,places){const neg=sec<0;let t=Math.round(Math.abs(sec)*Math.pow(10,places));const u=60*Math.pow(10,places);
+  const s=t%u;t=(t-s)/u;const m=t%60,d=(t-m)/60;return(neg?'-':'')+`${d}°${String(m).padStart(2,'0')}'${(s/Math.pow(10,places)).toFixed(places).padStart(places?places+3:2,'0')}"`;}
+// 「度.分秒」字串 → 度（例 359.5959 → 359°59'59"；121.5959687 → 121°59'59.687"）
+function parseDotDms(s,name){
+  s=String(s).trim();if(!/^-?\d+(\.\d*)?$/.test(s))throw new Error(`${name}格式不對，例：121.5959687`);
+  const neg=s.startsWith('-');if(neg)s=s.slice(1);const[ip,fp='']=s.split('.');
+  const d=parseInt(ip,10),m=parseInt((fp+'00').slice(0,2),10),sec=Number((fp.slice(2)+'00').slice(0,2)+'.'+fp.slice(4)||'0');
+  if(m>=60||sec>=60)throw new Error(`${name}的分或秒超過 60`);
+  return(neg?-1:1)*(d+m/60+sec/3600);
+}
+function out(p,f){const e=$(p+'err');try{f();e.textContent='';$(p+'res').hidden=false;}catch(err){e.textContent=err.message;$(p+'res').hidden=true;}}
+
+/* ---------- TWD97 二度分帶（GRS80，k0=0.9999，橫坐標加 250000） ---------- */
+const A=6378137,F=1/298.257222101,K0=0.9999,E0=250000,E2=F*(2-F),EP2=E2/(1-E2);
+function ll2tm(lat,lon,lon0){
+  const p=lat*R,l=(lon-lon0)*R,sp=Math.sin(p),cp=Math.cos(p),tp=Math.tan(p);
+  const N=A/Math.sqrt(1-E2*sp*sp),T=tp*tp,C=EP2*cp*cp,a=l*cp,e4=E2*E2,e6=e4*E2;
+  const M=A*((1-E2/4-3*e4/64-5*e6/256)*p-(3*E2/8+3*e4/32+45*e6/1024)*Math.sin(2*p)+(15*e4/256+45*e6/1024)*Math.sin(4*p)-(35*e6/3072)*Math.sin(6*p));
+  const x=E0+K0*N*(a+(1-T+C)*a**3/6+(5-18*T+T*T+72*C-58*EP2)*a**5/120);
+  const y=K0*(M+N*tp*(a*a/2+(5-T+9*C+4*C*C)*a**4/24+(61-58*T+T*T+600*C-330*EP2)*a**6/720));
+  return[x,y];
+}
+function tm2ll(E,N,lon0){
+  const mu=(N/K0)/(A*(1-E2/4-3*E2*E2/64-5*E2**3/256)),e1=(1-Math.sqrt(1-E2))/(1+Math.sqrt(1-E2));
+  const p1=mu+(3*e1/2-27*e1**3/32)*Math.sin(2*mu)+(21*e1*e1/16-55*e1**4/32)*Math.sin(4*mu)+(151*e1**3/96)*Math.sin(6*mu)+(1097*e1**4/512)*Math.sin(8*mu);
+  const sp=Math.sin(p1),cp=Math.cos(p1),C1=EP2*cp*cp,T1=Math.tan(p1)**2,N1=A/Math.sqrt(1-E2*sp*sp),R1=A*(1-E2)/Math.pow(1-E2*sp*sp,1.5),D=(E-E0)/(N1*K0);
+  const lat=p1-(N1*Math.tan(p1)/R1)*(D*D/2-(5+3*T1+10*C1-4*C1*C1-9*EP2)*D**4/24+(61+90*T1+298*C1+45*T1*T1-252*EP2-3*C1*C1)*D**6/720);
+  const lon=lon0*R+(D-(1+2*T1+C1)*D**3/6+(5-2*C1+28*T1-3*C1*C1+8*EP2+24*T1*T1)*D**5/120)/cp;
+  return[lat/R,lon/R];
+}
+
+/* ---------- 各分頁計算 ---------- */
+const CALC={
+  p3(){const n1=num('p3n1','N1'),e1=num('p3e1','E1'),n2=num('p3n2','N2'),e2=num('p3e2','E2');
+    const dn=n2-n1,de=e2-e1;if(!dn&&!de)throw new Error('兩點坐標相同');
+    let az=Math.atan2(de,dn)/R;if(az<0)az+=360;
+    $('p3az').textContent=dmsOf(az*3600,2);$('p3d').textContent=fx(Math.hypot(dn,de),3);},
+  p4(){const n=num('p4n','N'),e=num('p4e','E'),z=num('p4z','Z',1),i=num('p4i','儀器高',1),t=num('p4t','覘標高',1);
+    const az=(num('p4ad','方位角的度')+num('p4am','分',1)/60+num('p4as','秒',1)/3600)*R,d=num('p4d','平距'),h=num('p4h','高差',1);
+    $('p4rn').textContent=fx(n+Math.cos(az)*d,3);$('p4re').textContent=fx(e+Math.sin(az)*d,3);$('p4rz').textContent=fx(z+i-t+h,3);},
+  ang(){const d=num('angd','距離'),e=num('ange','偏移量');if(!d)throw new Error('距離不能是 0');
+    const a=parseDotDms(val('anga'),'夾角')*3600,off=Math.atan(e/d)/R*3600;
+    let r=val('angl')?a-off:a+off;r=((r%1296000)+1296000)%1296000;
+    $('angoff').textContent=dmsOf(off,2);$('angout').textContent=dmsOf(r,2);},
+  u2w(){const E=num('u2we','E 橫坐標'),N=num('u2wn','N 縱坐標');const[la,lo]=tm2ll(E,N,seg('u2wl'));
+    $('u2wla').textContent=dmsOf(la*3600,3);$('u2wlo').textContent=dmsOf(lo*3600,3);$('u2wdec').textContent=`${la.toFixed(8)}, ${lo.toFixed(8)}`;},
+  w2u(){const la=parseDotDms(val('w2ula'),'緯度'),lo=parseDotDms(val('w2ulo'),'經度');const[x,y]=ll2tm(la,lo,seg('w2ul'));
+    $('w2un').textContent=fx(y,3);$('w2ue').textContent=fx(x,3);}
+};
+function calc(p){out(p,CALC[p]);}
+document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{document.activeElement&&document.activeElement.blur();calc(b.dataset.go);});
+document.querySelectorAll('[data-clear]').forEach(b=>b.onclick=()=>{const p=b.dataset.clear;
+  document.querySelectorAll(`#${p} [data-k]`).forEach(el=>{if(el.type==='checkbox')el.checked=false;else el.value='';put(el.dataset.k,el.type==='checkbox'?'0':'');});
+  $(p+'res').hidden=true;$(p+'err').textContent='';});
+
+/* ---------- 離線 ---------- */
+if('serviceWorker' in navigator&&location.protocol==='https:'&&!/claudeusercontent|claude\.ai/.test(location.host)){navigator.serviceWorker.register('sw.js').catch(()=>{});}
+window.TLA={ll2tm,tm2ll,parseDotDms,dmsOf};
+})();
+</script>
+</body>
+</html>

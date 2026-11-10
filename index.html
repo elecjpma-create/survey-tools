@@ -58,7 +58,8 @@ footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-
 <header>
   <h1>測量小工具</h1>
   <nav id="tabs">
-    <button data-p="w2u">經緯度→坐標</button>
+    <button data-p="w2u">經緯度→坐標（60進位）</button>
+    <button data-p="w2d">經緯度→坐標（10進位）</button>
     <button data-p="u2w">坐標→經緯度</button>
     <button data-p="p3">方位距離</button>
     <button data-p="p4">坐標推算</button>
@@ -127,6 +128,22 @@ footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-
   </div>
 </section>
 
+<!-- 十進位經緯度 → TWD97 二度分帶 -->
+<section class="pg" id="w2d">
+  <p class="desc">十進位經緯度換算成 TWD97 二度分帶坐標，例如 Google 地圖上的 25.0271584, 121.4723105。</p>
+  <div class="card">
+    <div class="f"><label>緯度 N</label><input data-k="w2dla" inputmode="decimal" placeholder="25.0271584"></div>
+    <div class="f"><label>經度 E</label><input data-k="w2dlo" inputmode="decimal" placeholder="121.4723105"></div>
+    <div class="f"><label>中央經線</label><div class="seg" data-seg="w2dl"><button data-v="121">121°</button><button data-v="119">119°（澎湖）</button></div></div>
+  </div>
+  <div class="btns"><button data-clear="w2d">清除</button><button class="go" data-go="w2d">計算</button></div>
+  <div class="err" id="w2derr"></div>
+  <div class="card res" id="w2dres" hidden><h2>結果</h2>
+    <div class="rv"><span>N 縱坐標</span><b id="w2dn"></b></div>
+    <div class="rv"><span>E 橫坐標</span><b id="w2de"></b></div>
+  </div>
+</section>
+
 <!-- UtoW：TWD97 二度分帶 → 經緯度 -->
 <section class="pg" id="u2w">
   <p class="desc">TWD97 二度分帶坐標換算成經緯度（GRS80）。</p>
@@ -146,7 +163,7 @@ footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-
 
 <!-- WU60：經緯度（度.分秒）→ TWD97 二度分帶 -->
 <section class="pg" id="w2u">
-  <p class="desc">經緯度換算成 TWD97 二度分帶坐標。輸入「度.分秒」，例如 121.5959687 代表 121°59'59.687"。</p>
+  <p class="desc">60 進位經緯度換算成 TWD97 二度分帶坐標。輸入「度.分秒」，例如 121.5959687 代表 121°59'59.687"。</p>
   <div class="card">
     <div class="f"><label>緯度 N</label><input data-k="w2ula" inputmode="decimal" placeholder="25.5959687"></div>
     <div class="f"><label>經度 E</label><input data-k="w2ulo" inputmode="decimal" placeholder="121.5959687"></div>
@@ -240,7 +257,9 @@ const CALC={
   u2w(){const E=num('u2we','E 橫坐標'),N=num('u2wn','N 縱坐標');const[la,lo]=tm2ll(E,N,seg('u2wl'));
     $('u2wla').textContent=dmsOf(la*3600,3);$('u2wlo').textContent=dmsOf(lo*3600,3);$('u2wdec').textContent=`${la.toFixed(8)}, ${lo.toFixed(8)}`;},
   w2u(){const la=parseDotDms(val('w2ula'),'緯度'),lo=parseDotDms(val('w2ulo'),'經度');const[x,y]=ll2tm(la,lo,seg('w2ul'));
-    $('w2un').textContent=fx(y,3);$('w2ue').textContent=fx(x,3);}
+    $('w2un').textContent=fx(y,3);$('w2ue').textContent=fx(x,3);},
+  w2d(){const la=num('w2dla','緯度'),lo=num('w2dlo','經度');if(Math.abs(la)>90||Math.abs(lo)>180)throw new Error('經緯度超出範圍');
+    const[x,y]=ll2tm(la,lo,seg('w2dl'));$('w2dn').textContent=fx(y,3);$('w2de').textContent=fx(x,3);}
 };
 function calc(p){out(p,CALC[p]);}
 document.querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{document.activeElement&&document.activeElement.blur();calc(b.dataset.go);});

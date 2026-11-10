@@ -58,11 +58,11 @@ footer{font-size:12px;color:var(--muted);text-align:center;margin-top:18px;line-
 <header>
   <h1>測量小工具</h1>
   <nav id="tabs">
+    <button data-p="w2u">經緯度→坐標</button>
+    <button data-p="u2w">坐標→經緯度</button>
     <button data-p="p3">方位距離</button>
     <button data-p="p4">坐標推算</button>
     <button data-p="ang">角度偏移</button>
-    <button data-p="u2w">坐標→經緯度</button>
-    <button data-p="w2u">經緯度→坐標</button>
   </nav>
 </header>
 <main>
@@ -187,7 +187,7 @@ const seg=k=>parseFloat(get(k)||'121');
 /* ---------- 分頁 ---------- */
 function show(p){document.querySelectorAll('.pg').forEach(s=>s.classList.toggle('on',s.id===p));document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.p===p));put('tab',p);}
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>show(b.dataset.p));
-show(get('tab')||'p3');
+show(get('tab')||'w2u');
 
 /* ---------- 共用 ---------- */
 function num(k,name,opt){const s=val(k);if(s===''){if(opt)return 0;throw new Error(`請輸入${name}`);}const v=Number(s);if(!isFinite(v))throw new Error(`${name}不是數字`);return v;}
